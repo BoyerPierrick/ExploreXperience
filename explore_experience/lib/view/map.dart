@@ -1,37 +1,24 @@
-import 'airport.dart';
+import 'package:explore_experience/airport_markers.dart';
+import 'package:explore_experience/location.dart';
 import 'package:flutter/material.dart';
-import 'package:location/location.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
+import 'airport.dart';
 
-// This class represents the main screen that displays a map with airport markers.
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({Key? key}) : super(key: key);
 
   @override
-  // Creates the mutable state for this widget at a given location in the tree.
+  // ignore: library_private_types_in_public_api
   _MapScreenState createState() => _MapScreenState();
 }
 
 class _MapScreenState extends State<MapScreen> {
-  // Controller for the Google Map.
   late GoogleMapController mapController;
-
-  // Initial camera position for the map.
   final LatLng _initialCameraPosition = const LatLng(48.8566, 2.3522);
-
-  // Details of various airports.
-  List<Map<String, dynamic>> airportDetails = [
-    {"name": "Charles de Gaulle Airport", "lat": 49.0097, "long": 2.5479},
-    {"name": "Orly Airport", "lat": 48.7262, "long": 2.3659},
-    {"name": "Nice Côte d'Azur Airport", "lat": 43.6584, "long": 7.2159},
-    {"name": "Lyon–Saint-Exupéry Airport", "lat": 45.7219, "long": 5.0900},
-    {"name": "Marseille Provence Airport", "lat": 43.4367, "long": 5.2151},
-    {"name": "Toulouse-Blagnac Airport", "lat": 43.6307, "long": 1.3676},
-    {"name": "Bordeaux-Mérignac Airport", "lat": 44.8286, "long": -0.7159},
-  ];
-
+  
   // Set to hold airport markers.
-  Set<Marker> airportMarkers = Set();
+  Set<Marker> airportMarkers = {};
 
   // Holds the current device location.
   LocationData? currentLocation;
@@ -51,18 +38,18 @@ class _MapScreenState extends State<MapScreen> {
 
   // Fetches and sets the current device location using the location package.
   void _getCurrentLocation() async {
-    var location = Location();
-    try {
-      currentLocation = await location.getLocation();
-      // Animates the map camera to the current location.
-      mapController.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
-          10.0,
-        ),
-      );
-    } catch (e) {
-      print('Error getting location: $e');
+    LocationData? locationData = await LocationUtil.getCurrentLocation();
+    if (locationData != null) {
+      setState(() {
+        currentLocation = locationData;
+        // Animates the map camera to the current location.
+        mapController.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
+            10.0,
+          ),
+        );
+      });
     }
   }
 
@@ -113,19 +100,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // Adds airport markers to the set.
   void _addAirportMarkers() {
-    for (int i = 0; i < airportDetails.length; i++) {
-      final airport = airportDetails[i];
-      airportMarkers.add(
-        Marker(
-          markerId: MarkerId('airport$i'),
-          position: LatLng(airport['lat'], airport['long']),
-          infoWindow: InfoWindow(title: airport['name']),
-          onTap: () {
-            _openAirportDetails(airport['name']);
-          },
-        ),
-      );
-    }
+    AirportMarkers.addAirportMarkers(airportMarkers, _openAirportDetails);
   }
 
   // Opens a new page or screen with detailed information about the selected airport.
@@ -144,6 +119,7 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: const Text('ExploreXperience'),
       ),
+
       // Google Map widget displaying the map with airport markers.
       body: GoogleMap(
         onMapCreated: _onMapCreated,
